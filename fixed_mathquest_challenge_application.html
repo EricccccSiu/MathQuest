@@ -1,0 +1,1517 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MathQuest: Doubled-Difficulty MCQ Speed Challenge</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- KaTeX CDN for LaTeX rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Outfit', 'sans-serif'],
+                        display: ['Fredoka', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        brand: {
+                            purple: '#8B5CF6',
+                            pink: '#EC4899',
+                            blue: '#3B82F6',
+                            emerald: '#10B981',
+                            amber: '#F59E0B',
+                            red: '#EF4444',
+                            cyan: '#06B6D4',
+                            dark: '#0F172A',
+                            cardDark: '#1E293B',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Outfit', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        h1, h2, h3, .font-display {
+            font-family: 'Fredoka', sans-serif;
+        }
+        .math-font {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .scratchpad-canvas {
+            cursor: crosshair;
+            touch-action: none;
+        }
+        @keyframes bounce-short {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-4px); }
+        }
+        .animate-bounce-short {
+            animation: bounce-short 0.35s ease-in-out;
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(139, 92, 246, 0.4);
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(139, 92, 246, 0.7);
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col transition-colors duration-300">
+
+    <header class="bg-slate-900/90 backdrop-blur-md sticky top-0 z-30 border-b border-slate-800 px-4 py-3">
+        <div class="max-w-6xl mx-auto flex items-center justify-between">
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="goToSetup()">
+                <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-brand-purple via-brand-pink to-brand-cyan flex items-center justify-center text-white shadow-lg shadow-purple-500/20 font-display font-bold text-xl">
+                    <i class="fa-solid fa-brain"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-wide bg-gradient-to-r from-brand-purple via-pink-400 to-brand-cyan bg-clip-text text-transparent leading-none">MathQuest Ultra</h1>
+                    <span class="text-[11px] font-semibold text-slate-400">Advanced Grade 7 to A-Level / Further Maths Arena</span>
+                </div>
+            </div>
+
+            <!-- Header Stats HUD -->
+            <div id="header-stats-bar" class="flex items-center space-x-3 sm:space-x-5 bg-slate-950/80 px-4 py-1.5 rounded-full border border-slate-800 text-xs">
+                <div class="flex items-center space-x-1.5" title="Total XP">
+                    <i class="fa-solid fa-star text-amber-400 text-sm"></i>
+                    <span id="stat-xp" class="font-display font-bold text-slate-200">0 XP</span>
+                </div>
+                <div class="h-3.5 w-[1px] bg-slate-800"></div>
+                <div class="flex items-center space-x-1.5" title="All-Time High Score">
+                    <i class="fa-solid fa-trophy text-yellow-400 text-sm"></i>
+                    <span id="stat-highscore" class="font-display font-bold text-slate-200">Best: 0</span>
+                </div>
+            </div>
+
+            <!-- Sound & Navigation Controllers -->
+            <div class="flex items-center space-x-2">
+                <button id="home-nav-btn" onclick="goToSetup()" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 transition text-xs font-display font-semibold flex items-center gap-1.5" title="Return to Topic Selection Menu">
+                    <i class="fa-solid fa-house text-brand-purple"></i> <span class="hidden sm:inline">Menu</span>
+                </button>
+                <button id="sound-btn" onclick="toggleSound()" class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 transition" title="Toggle Sound Effects">
+                    <i id="sound-icon" class="fa-solid fa-volume-high"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-6xl w-full mx-auto p-4 sm:p-6 flex flex-col justify-center items-center">
+
+        <!-- ==================== 1. SETUP / TOPIC SELECTION SCREEN ==================== -->
+        <div id="view-setup" class="w-full max-w-5xl bg-slate-900/90 border border-slate-800 rounded-3xl p-5 sm:p-8 shadow-2xl space-y-6">
+            <div class="text-center space-y-2">
+                <span class="bg-gradient-to-r from-brand-purple to-brand-pink text-white text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-sm">
+                    Doubled Difficulty • MCQ Arena
+                </span>
+                <h2 class="text-3xl sm:text-4xl font-display font-bold text-white">Select Mastery Domain</h2>
+                <p class="text-slate-400 text-xs sm:text-sm max-w-xl mx-auto">Choose a topic below or search keywords to begin your challenge.</p>
+            </div>
+
+            <!-- Search & Filter Bar -->
+            <div class="space-y-3">
+                <div class="flex items-center gap-3 bg-slate-950 border border-slate-800 rounded-2xl px-4 py-2.5 shadow-inner">
+                    <i class="fa-solid fa-magnifying-glass text-slate-400 text-sm"></i>
+                    <input type="text" id="topic-search" oninput="filterTopics()" placeholder="Search topic (e.g. Differentiation, Factorisation, Logarithms)..." class="bg-transparent text-sm text-slate-200 placeholder-slate-500 focus:outline-none w-full font-sans">
+                    <button onclick="clearSearch()" id="clear-search-btn" class="hidden text-slate-500 hover:text-slate-300 text-xs">
+                        <i class="fa-solid fa-circle-xmark"></i>
+                    </button>
+                </div>
+
+                <!-- Level Category Filter Tabs -->
+                <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800/80 pb-3">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button onclick="filterLevel('all')" id="level-tab-all" class="level-tab-btn px-3.5 py-1.5 rounded-xl font-display font-semibold text-xs transition bg-brand-purple text-white shadow-md">
+                            All Topics
+                        </button>
+                        <button onclick="filterLevel('juniors')" id="level-tab-juniors" class="level-tab-btn px-3.5 py-1.5 rounded-xl font-display font-semibold text-xs transition bg-slate-800 text-slate-300 hover:bg-slate-700">
+                            Grade 7 - 9
+                        </button>
+                        <button onclick="filterLevel('seniors')" id="level-tab-seniors" class="level-tab-btn px-3.5 py-1.5 rounded-xl font-display font-semibold text-xs transition bg-slate-800 text-slate-300 hover:bg-slate-700">
+                            Grade 10 - 11
+                        </button>
+                        <button onclick="filterLevel('alevel')" id="level-tab-alevel" class="level-tab-btn px-3.5 py-1.5 rounded-xl font-display font-semibold text-xs transition bg-slate-800 text-slate-300 hover:bg-slate-700">
+                            A-Level Pure
+                        </button>
+                        <button onclick="filterLevel('further')" id="level-tab-further" class="level-tab-btn px-3.5 py-1.5 rounded-xl font-display font-semibold text-xs transition bg-slate-800 text-slate-300 hover:bg-slate-700">
+                            Further Maths
+                        </button>
+                    </div>
+                    <button onclick="selectRandomTopic()" class="text-xs text-brand-purple hover:text-purple-300 font-display font-semibold flex items-center gap-1 transition">
+                        <i class="fa-solid fa-shuffle"></i> Random Topic
+                    </button>
+                </div>
+            </div>
+
+            <!-- Topic Sections Container -->
+            <div id="topic-cards-container" class="space-y-6 max-h-[460px] overflow-y-auto pr-2">
+
+                <!-- SECTION 1: GRADE 7 - 9 -->
+                <div id="section-juniors" class="topic-section space-y-2">
+                    <div class="flex items-center gap-2 text-xs font-bold text-blue-400 tracking-wider uppercase border-b border-blue-500/20 pb-1">
+                        <i class="fa-solid fa-layer-group"></i> Grade 7 - 9 Foundation Algebra
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                        <div data-level="juniors" data-keywords="linear equation solve unknown fraction brackets" onclick="selectTopic('linear-eq')" id="topic-card-linear-eq" class="topic-card p-3.5 rounded-2xl border-2 border-brand-purple bg-brand-purple/10 text-white cursor-pointer transition flex flex-col justify-between hover:border-brand-purple shadow-md">
+                            <div>
+                                <div class="flex items-center justify-between mb-1">
+                                    <span class="text-[10px] font-bold tracking-wider px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30">Grade 7-9</span>
+                                    <i class="fa-solid fa-circle-check text-brand-purple topic-check"></i>
+                                </div>
+                                <h3 class="font-display font-bold text-sm text-white">Linear Equations</h3>
+                                <p class="text-[11px] text-slate-400 mt-0.5">Nested brackets & fraction clear.</p>
+                            </div>
+                            <div class="katex-preview mt-2 text-[11px] text-brand-purple font-mono" data-katex="\frac{3x - 1}{4} - \frac{x + 2}{3} = 2"></div>
+                        </div>
+
+                        <div data-level="juniors" data-keywords="expansion multiply brackets trinomial foil" onclick="selectTopic('expansion')" id="topic-card-expansion" class="topic-card p-3.5 rounded-2xl border-2 border-slate-800 bg-slate-900 text-slate-300 cursor-pointer transition flex flex-col justify-between hover:border-slate-700">
+                            <div>
+                                <div class="flex items-center justify-between mb-1">
+                                    <span class="text-[10px] font-bold tracking-wider px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30">Grade 7-9</span>
+                                    <i class="fa-solid fa-circle text-slate-700 topic-check"></i>
+                                </div>
+                                <h3 class="font-display font-bold text-sm text-white">Expansion of Expressions</h3>
+                                <p class="text-[11px] text-slate-400 mt-0.5">Trinomials & double brackets.</p>
+                            </div>
+                            <div class="katex-preview mt-2 text-[11px] text-slate-400 font-mono" data-katex="(2x - 3)(3x^2 + 4x - 1)"></div>
+                        </div>
+
+                        <div data-level="juniors" data-keywords="factorise quadratic grouping common factors" onclick="selectTopic('factorisation')" id="topic-card-factorisation" class="topic-card p-3.5 rounded-2xl border-2 border-slate-800 bg-slate-900 text-slate-300 cursor-pointer transition flex flex-col justify-between hover:border-slate-700">
+                            <div>
+                                <div class="flex items-center justify-between mb-1">
+                                    <span class="text-[10px] font-bold tracking-wider px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30">Grade 7-9</span>
+                                    <i class="fa-solid fa-circle text-slate-700 topic-check"></i>
+                                </div>
+                                <h3 class="font-display font-bold text-sm text-white">Factorisation</h3>
+                                <p class="text-[11px] text-slate-400 mt-0.5">Non-monic quadratics & grouping.</p>
+                            </div>
+                            <div class="katex-preview mt-2 text-[11px] text-slate-400 font-mono" data-katex="6x^2 - 11x - 35"></div>
+                        </div>
+
+                        <div data-level="juniors" data-keywords="simultaneous system linear quadratic intersection" onclick="selectTopic('simultaneous')" id="topic-card-simultaneous" class="topic-card p-3.5 rounded-2xl border-2 border-slate-800 bg-slate-900 text-slate-300 cursor-pointer transition flex flex-col justify-between hover:border-slate-700">
+                            <div>
+                                <div class="flex items-center justify-between mb-1">
+                                    <span class="text-[10px] font-bold tracking-wider px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30">Grade 7-9</span>
+                                    <i class="fa-solid fa-circle text-slate-700 topic-check"></i>
+                                </div>
+                                <h3 class="font-display font-bold text-sm text-white">Simultaneous Equations</h3>
+                                <p class="text-[11px] text-slate-400 mt-0.5">Linear-quadratic intersections.</p>
+                            </div>
+                            <div class="katex-preview mt-2 text-[11px] text-slate-400 font-mono" data-katex="y = x^2 - 4, \, 2x - y = 1"></div>
+                        </div>
+
+                        <div data-level="juniors" data-keywords="index laws surds radicals power rationalise" onclick="selectTopic('index-radicals')" id="topic-card-index-radicals" class="topic-card p-3.5 rounded-2xl border-2 border-slate-800 bg-slate-900 text-slate-300 cursor-pointer transition flex flex-col justify-between hover:border-slate-700">
+                            <div>
+                                <div class="flex items-center justify-between mb-1">
+                                    <span class="text-[10px] font-bold tracking-wider px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30">Grade 7-9</span>
+                                    <i class="fa-solid fa-circle text-slate-700 topic-check"></i>
+                                </div>
+                                <h3 class="font-display font-bold text-sm text-white">Index Laws & Surds</h3>
+                                <p class="text-[11px] text-slate-400 mt-0.5">Rationalising surd denominators.</p>
+                            </div>
+                            <div class="katex-preview mt-2 text-[11px] text-slate-400 font-mono" data-katex="\frac{6}{\sqrt{5} - \sqrt{2}}"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTION 2: GRADE 10 - 11 -->
+                <div id="section-seniors" class="topic-section space-y-2">
+                    <div class="flex items-center gap-2 text-xs font-bold text-emerald-400 tracking-wider uppercase border-b border-emerald-500/20 pb-1">
+                        <i class="fa-solid fa-square-root-variable"></i> Grade 10 - 11 GCSE / IGCSE
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                        <div data-level="seniors" data-keywords="quadratic completing square vertex discriminant" onclick="selectTopic('quadratic-eq')" id="topic-card-quadratic-eq" class="topic-card p-3.5 rounded-2xl border-2 border-slate-800 bg-slate-900 text-slate-300 cursor-pointer transition flex flex-col justify-between hover:border-slate-700">
+                            <div>
+                                <div class="flex items-center justify-between mb-1">
+                                    <span class="text-[10px] font-bold tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Grade 10-11</span>
+                                    <i class="fa-solid fa-circle text-slate-700 topic-check"></i>
+                                </div>
+                                <h3 class="font-display font-bold text-sm text-white">Quadratic Equations</h3>
+                                <p class="text-[11px] text-slate-400 mt-0.5">Completing the square & vertex form.</p>
+                            </div>
+                            <div class="katex-preview mt-2 text-[11px] text-slate-400 font-mono" data-katex="3x^2 - 12x + 19 = a(x-h)^2 + k"></div>
+                        </div>
+
+                        <div data-level="seniors" data-keywords="inequality modulus absolute value range" onclick="selectTopic('inequalities-abs')" id="topic-card-inequalities-abs" class="topic-card p-3.5 rounded-2xl border-2 border-slate-800 bg-slate-900 text-slate-300 cursor-pointer transition flex flex-col justify-between hover:border-slate-700">
+                            <div>
+                                <div class="flex items-center justify-between mb-1">
+                                    <span class="text-[10px] font-bold tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Grade 10-11</span>
+                                    <i class="fa-solid fa-circle text-slate-700 topic-check"></i>
+                                </div>
+                                <h3 class="font-display font-bold text-sm text-white">Inequalities & Modulus</h3>
+                                <p class="text-[11px] text-slate-400 mt-0.5">Absolute value inequalities $|ax+b| > k$.</p>
+                            </div>
+                            <div class="katex-preview mt-2 text-[11px] text-slate-400 font-mono" data-katex="|2x - 5| > |x + 1|"></div>
+                        </div>
+
+                        <div data-level="seniors" data-keywords="sequence series arithmetic geometric sum infinity sigma" onclick="selectTopic('sequences-series')" id="topic-card-sequences-series" class="topic-card p-3.5 rounded-2xl border-2 border-slate-800 bg-slate-900 text-slate-300 cursor-pointer transition flex flex-col justify-between hover:border-slate-700">
+                            <div>
+                                <div class="flex items-center justify-between mb-1">
+                                    <span class="text-[10px] font-bold tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Grade 10-11</span>
+                                    <i class="fa-solid fa-circle text-slate-700 topic-check"></i>
+                                </div>
+                                <h3 class="font-display font-bold text-sm text-white">Sequences & Series</h3>
+                                <p class="text-[11px] text-slate-400 mt-0.5">Infinite geometric series $S_\infty$.</p>
+                            </div>
+                            <div class="katex-preview mt-2 text-[11px] text-slate-400 font-mono" data-katex="\sum_{k=1}^{\infty} 12 \left(\frac{2}{3}\right)^k"></div>
+                        </div>
+
+                        <div data-level="seniors" data-keywords="trigonometry identity sine cosine double angle" onclick="selectTopic('trig-identities')" id="topic-card-trig-identities" class="topic-card p-3.5 rounded-2xl border-2 border-slate-800 bg-slate-900 text-slate-300 cursor-pointer transition flex flex-col justify-between hover:border-slate-700">
+                            <div>
+                                <div class="flex items-center justify-between mb-1">
+                                    <span class="text-[10px] font-bold tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Grade 10-11</span>
+                                    <i class="fa-solid fa-circle text-slate-700 topic-check"></i>
+                                </div>
+                                <h3 class="font-display font-bold text-sm text-white">Trigonometric Equations</h3>
+                                <p class="text-[11px] text-slate-400 mt-0.5">Quadratic trig form & identities.</p>
+                            </div>
+                            <div class="katex-preview mt-2 text-[11px] text-slate-400 font-mono" data-katex="2\cos^2(\theta) + 3\sin(\theta) - 3 = 0"></div>
+                        </div>
+
+                        <div data-level="seniors" data-keywords="logarithms exponent base change log" onclick="selectTopic('logarithms')" id="topic-card-logarithms" class="topic-card p-3.5 rounded-2xl border-2 border-slate-800 bg-slate-900 text-slate-300 cursor-pointer transition flex flex-col justify-between hover:border-slate-700">
+                            <div>
+                                <div class="flex items-center justify-between mb-1">
+                                    <span class="text-[10px] font-bold tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Grade 10-11</span>
+                                    <i class="fa-solid fa-circle text-slate-700 topic-check"></i>
+                                </div>
+                                <h3 class="font-display font-bold text-sm text-white">Logarithms & Exponents</h3>
+                                <p class="text-[11px] text-slate-400 mt-0.5">Change of base rule & exponent laws.</p>
+                            </div>
+                            <div class="katex-preview mt-2 text-[11px] text-slate-400 font-mono" data-katex="\log_3(x) + 2\log_x(3) = 3"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTION 3: A-LEVEL PURE -->
+                <div id="section-alevel" class="topic-section space-y-2">
+                    <div class="flex items-center gap-2 text-xs font-bold text-pink-400 tracking-wider uppercase border-b border-pink-500/20 pb-1">
+                        <i class="fa-solid fa-chart-line"></i> A-Level Pure Mathematics
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                        <div data-level="alevel" data-keywords="differentiation derivative implicit quotient chain calculus" onclick="selectTopic('differentiation')" id="topic-card-differentiation" class="topic-card p-3.5 rounded-2xl border-2 border-slate-800 bg-slate-900 text-slate-300 cursor-pointer transition flex flex-col justify-between hover:border-slate-700">
+                            <div>
+                                <div class="flex items-center justify-between mb-1">
+                                    <span class="text-[10px] font-bold tracking-wider px-2 py-0.5 rounded bg-pink-500/20 text-pink-300 border border-pink-500/30">A-Level Pure</span>
+                                    <i class="fa-solid fa-circle text-slate-700 topic-check"></i>
+                                </div>
+                                <h3 class="font-display font-bold text-sm text-white">Differentiation</h3>
+                                <p class="text-[11px] text-slate-400 mt-0.5">Implicit differentiation & chain rule.</p>
+                            </div>
+                            <div class="katex-preview mt-2 text-[11px] text-slate-400 font-mono" data-katex="\frac{d}{dx} \left[ \frac{\ln(x)}{x^2 + 1} \right]"></div>
+                        </div>
+
+                        <div data-level="alevel" data-keywords="integration integral parts substitution calculus" onclick="selectTopic('integration')" id="topic-card-integration" class="topic-card p-3.5 rounded-2xl border-2 border-slate-800 bg-slate-900 text-slate-300 cursor-pointer transition flex flex-col justify-between hover:border-slate-700">
+                            <div>
+                                <div class="flex items-center justify-between mb-1">
+                                    <span class="text-[10px] font-bold tracking-wider px-2 py-0.5 rounded bg-pink-500/20 text-pink-300 border border-pink-500/30">A-Level Pure</span>
+                                    <i class="fa-solid fa-circle text-slate-700 topic-check"></i>
+                                </div>
+                                <h3 class="font-display font-bold text-sm text-white">Integration</h3>
+                                <p class="text-[11px] text-slate-400 mt-0.5">Integration by parts & substitution.</p>
+                            </div>
+                            <div class="katex-preview mt-2 text-[11px] text-slate-400 font-mono" data-katex="\int x^2 e^{2x} \, dx"></div>
+                        </div>
+
+                        <div data-level="alevel" data-keywords="functions composite inverse domain range" onclick="selectTopic('functions')" id="topic-card-functions" class="topic-card p-3.5 rounded-2xl border-2 border-slate-800 bg-slate-900 text-slate-300 cursor-pointer transition flex flex-col justify-between hover:border-slate-700">
+                            <div>
+                                <div class="flex items-center justify-between mb-1">
+                                    <span class="text-[10px] font-bold tracking-wider px-2 py-0.5 rounded bg-pink-500/20 text-pink-300 border border-pink-500/30">A-Level Pure</span>
+                                    <i class="fa-solid fa-circle text-slate-700 topic-check"></i>
+                                </div>
+                                <h3 class="font-display font-bold text-sm text-white">Functions & Inverses</h3>
+                                <p class="text-[11px] text-slate-400 mt-0.5">Composite functions & inverse derivations.</p>
+                            </div>
+                            <div class="katex-preview mt-2 text-[11px] text-slate-400 font-mono" data-katex="f(x) = \frac{e^x - 1}{e^x + 1}"></div>
+                        </div>
+
+                        <div data-level="alevel" data-keywords="graphs transformation asymptote inflection asymptote" onclick="selectTopic('graphs')" id="topic-card-graphs" class="topic-card p-3.5 rounded-2xl border-2 border-slate-800 bg-slate-900 text-slate-300 cursor-pointer transition flex flex-col justify-between hover:border-slate-700">
+                            <div>
+                                <div class="flex items-center justify-between mb-1">
+                                    <span class="text-[10px] font-bold tracking-wider px-2 py-0.5 rounded bg-pink-500/20 text-pink-300 border border-pink-500/30">A-Level Pure</span>
+                                    <i class="fa-solid fa-circle text-slate-700 topic-check"></i>
+                                </div>
+                                <h3 class="font-display font-bold text-sm text-white">Graphs & Asymptotes</h3>
+                                <p class="text-[11px] text-slate-400 mt-0.5">Oblique asymptotes & curve sketching.</p>
+                            </div>
+                            <div class="katex-preview mt-2 text-[11px] text-slate-400 font-mono" data-katex="y = \frac{2x^2 + 3x + 1}{x - 1}"></div>
+                        </div>
+
+                        <div data-level="alevel" data-keywords="limit lhopital indeterminate derivative" onclick="selectTopic('limits')" id="topic-card-limits" class="topic-card p-3.5 rounded-2xl border-2 border-slate-800 bg-slate-900 text-slate-300 cursor-pointer transition flex flex-col justify-between hover:border-slate-700">
+                            <div>
+                                <div class="flex items-center justify-between mb-1">
+                                    <span class="text-[10px] font-bold tracking-wider px-2 py-0.5 rounded bg-pink-500/20 text-pink-300 border border-pink-500/30">A-Level Pure</span>
+                                    <i class="fa-solid fa-circle text-slate-700 topic-check"></i>
+                                </div>
+                                <h3 class="font-display font-bold text-sm text-white">Limits & L'Hôpital</h3>
+                                <p class="text-[11px] text-slate-400 mt-0.5">L'Hôpital's rule for indeterminate forms.</p>
+                            </div>
+                            <div class="katex-preview mt-2 text-[11px] text-slate-400 font-mono" data-katex="\lim_{x \to \infty} \left( \sqrt{x^2 + 4x} - x \right)"></div>
+                        </div>
+
+                        <div data-level="alevel" data-keywords="binomial expansion theorem fractional powers" onclick="selectTopic('binomial-theorem')" id="topic-card-binomial-theorem" class="topic-card p-3.5 rounded-2xl border-2 border-slate-800 bg-slate-900 text-slate-300 cursor-pointer transition flex flex-col justify-between hover:border-slate-700">
+                            <div>
+                                <div class="flex items-center justify-between mb-1">
+                                    <span class="text-[10px] font-bold tracking-wider px-2 py-0.5 rounded bg-pink-500/20 text-pink-300 border border-pink-500/30">A-Level Pure</span>
+                                    <i class="fa-solid fa-circle text-slate-700 topic-check"></i>
+                                </div>
+                                <h3 class="font-display font-bold text-sm text-white">Binomial Expansion</h3>
+                                <p class="text-[11px] text-slate-400 mt-0.5">Negative and fractional powers $(1+x)^n$.</p>
+                            </div>
+                            <div class="katex-preview mt-2 text-[11px] text-slate-400 font-mono" data-katex="(1 - 4x)^{-1/2}"></div>
+                        </div>
+
+                        <div data-level="alevel" data-keywords="partial fractions algebraic denominator" onclick="selectTopic('partial-fractions')" id="topic-card-partial-fractions" class="topic-card p-3.5 rounded-2xl border-2 border-slate-800 bg-slate-900 text-slate-300 cursor-pointer transition flex flex-col justify-between hover:border-slate-700">
+                            <div>
+                                <div class="flex items-center justify-between mb-1">
+                                    <span class="text-[10px] font-bold tracking-wider px-2 py-0.5 rounded bg-pink-500/20 text-pink-300 border border-pink-500/30">A-Level Pure</span>
+                                    <i class="fa-solid fa-circle text-slate-700 topic-check"></i>
+                                </div>
+                                <h3 class="font-display font-bold text-sm text-white">Partial Fractions</h3>
+                                <p class="text-[11px] text-slate-400 mt-0.5">Repeated & non-linear factors.</p>
+                            </div>
+                            <div class="katex-preview mt-2 text-[11px] text-slate-400 font-mono" data-katex="\frac{x^2 + 5}{x(x-2)^2}"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTION 4: FURTHER MATHS -->
+                <div id="section-further" class="topic-section space-y-2">
+                    <div class="flex items-center gap-2 text-xs font-bold text-cyan-400 tracking-wider uppercase border-b border-cyan-500/20 pb-1">
+                        <i class="fa-solid fa-atom"></i> Further Mathematics
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                        <div data-level="further" data-keywords="complex numbers demoivre imaginary polar argand" onclick="selectTopic('complex-numbers')" id="topic-card-complex-numbers" class="topic-card p-3.5 rounded-2xl border-2 border-slate-800 bg-slate-900 text-slate-300 cursor-pointer transition flex flex-col justify-between hover:border-slate-700">
+                            <div>
+                                <div class="flex items-center justify-between mb-1">
+                                    <span class="text-[10px] font-bold tracking-wider px-2 py-0.5 rounded bg-brand-cyan/20 text-cyan-300 border border-cyan-500/30">Further Maths</span>
+                                    <i class="fa-solid fa-circle text-slate-700 topic-check"></i>
+                                </div>
+                                <h3 class="font-display font-bold text-sm text-white">Complex Numbers</h3>
+                                <p class="text-[11px] text-slate-400 mt-0.5">De Moivre's theorem & polar form.</p>
+                            </div>
+                            <div class="katex-preview mt-2 text-[11px] text-slate-400 font-mono" data-katex="(\sqrt{3} + i)^6 = r e^{i\theta}"></div>
+                        </div>
+
+                        <div data-level="further" data-keywords="matrices vectors determinant cross product 3d" onclick="selectTopic('matrices-vectors')" id="topic-card-matrices-vectors" class="topic-card p-3.5 rounded-2xl border-2 border-slate-800 bg-slate-900 text-slate-300 cursor-pointer transition flex flex-col justify-between hover:border-slate-700">
+                            <div>
+                                <div class="flex items-center justify-between mb-1">
+                                    <span class="text-[10px] font-bold tracking-wider px-2 py-0.5 rounded bg-brand-cyan/20 text-cyan-300 border border-cyan-500/30">Further Maths</span>
+                                    <i class="fa-solid fa-circle text-slate-700 topic-check"></i>
+                                </div>
+                                <h3 class="font-display font-bold text-sm text-white">Matrices & Vectors</h3>
+                                <p class="text-[11px] text-slate-400 mt-0.5">3x3 determinants & vector cross product.</p>
+                            </div>
+                            <div class="katex-preview mt-2 text-[11px] text-slate-400 font-mono" data-katex="\vec{u} \times \vec{v}"></div>
+                        </div>
+
+                        <div data-level="further" data-keywords="differential equations ode second order homogeneous" onclick="selectTopic('diff-equations')" id="topic-card-diff-equations" class="topic-card p-3.5 rounded-2xl border-2 border-slate-800 bg-slate-900 text-slate-300 cursor-pointer transition flex flex-col justify-between hover:border-slate-700">
+                            <div>
+                                <div class="flex items-center justify-between mb-1">
+                                    <span class="text-[10px] font-bold tracking-wider px-2 py-0.5 rounded bg-brand-cyan/20 text-cyan-300 border border-cyan-500/30">Further Maths</span>
+                                    <i class="fa-solid fa-circle text-slate-700 topic-check"></i>
+                                </div>
+                                <h3 class="font-display font-bold text-sm text-white">Differential Equations</h3>
+                                <p class="text-[11px] text-slate-400 mt-0.5">2nd order homogeneous ODEs.</p>
+                            </div>
+                            <div class="katex-preview mt-2 text-[11px] text-slate-400 font-mono" data-katex="\frac{d^2y}{dx^2} - 7\frac{dy}{dx} + 12y = 0"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Empty search state -->
+                <div id="no-topics-found" class="hidden text-center py-8 text-slate-500 space-y-2">
+                    <i class="fa-solid fa-magnifying-glass text-2xl"></i>
+                    <p class="text-xs font-semibold">No math topics match your search criteria.</p>
+                </div>
+
+            </div>
+
+            <!-- Configuration Summary & Modifiers -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-slate-800">
+                <!-- Difficulty selector -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">
+                        <i class="fa-solid fa-sliders text-brand-pink mr-1"></i> Challenge Difficulty
+                    </label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button type="button" onclick="selectDifficulty('easy')" id="diff-easy" class="diff-btn py-2.5 rounded-xl border-2 font-display font-bold text-xs text-center transition border-slate-800 bg-slate-950 text-slate-400 hover:border-slate-700">
+                            Standard
+                        </button>
+                        <button type="button" onclick="selectDifficulty('medium')" id="diff-medium" class="diff-btn py-2.5 rounded-xl border-2 font-display font-bold text-xs text-center transition bg-amber-500/10 border-amber-500 text-amber-400">
+                            Hard
+                        </button>
+                        <button type="button" onclick="selectDifficulty('hard')" id="diff-hard" class="diff-btn py-2.5 rounded-xl border-2 font-display font-bold text-xs text-center transition border-slate-800 bg-slate-950 text-slate-400 hover:border-slate-700">
+                            Extreme
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Timer Selector -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">
+                        <i class="fa-solid fa-stopwatch text-amber-400 mr-1"></i> Speed Mode
+                    </label>
+                    <div class="grid grid-cols-4 gap-2">
+                        <button type="button" onclick="selectTimer(30)" id="timer-30" class="timer-btn py-2.5 rounded-xl border-2 font-display font-bold text-xs transition border-slate-800 bg-slate-950 text-slate-400 hover:border-slate-700">
+                            30s
+                        </button>
+                        <button type="button" onclick="selectTimer(60)" id="timer-60" class="timer-btn py-2.5 rounded-xl border-2 font-display font-bold text-xs transition bg-amber-500/10 border-amber-500 text-amber-400">
+                            60s
+                        </button>
+                        <button type="button" onclick="selectTimer(120)" id="timer-120" class="timer-btn py-2.5 rounded-xl border-2 font-display font-bold text-xs transition border-slate-800 bg-slate-950 text-slate-400 hover:border-slate-700">
+                            120s
+                        </button>
+                        <button type="button" onclick="selectTimer('endless')" id="timer-endless" class="timer-btn py-2.5 rounded-xl border-2 font-display font-bold text-xs transition border-slate-800 bg-slate-950 text-slate-400 hover:border-slate-700">
+                            Endless
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Active Selected Topic Bar -->
+            <div class="bg-slate-950 border border-slate-800 rounded-2xl p-3 flex flex-wrap items-center justify-between text-xs gap-2">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-circle-check text-brand-purple"></i>
+                    <span class="text-slate-400 font-medium">Selected Domain:</span>
+                    <strong id="summary-topic-title" class="text-white font-display">Linear Equations in 1 Unknown</strong>
+                </div>
+                <div class="flex items-center gap-3 text-slate-400">
+                    <span>Difficulty: <strong id="summary-diff" class="text-amber-400 uppercase font-mono">Hard</strong></span>
+                    <span>Timer: <strong id="summary-timer" class="text-brand-cyan font-mono">60s</strong></span>
+                </div>
+            </div>
+
+            <!-- Start Challenge Button -->
+            <button onclick="startChallenge()" class="w-full py-4 bg-gradient-to-r from-brand-purple via-brand-pink to-brand-cyan hover:opacity-95 text-white font-display font-bold text-lg rounded-2xl shadow-xl shadow-purple-500/20 active:scale-[0.99] transition flex items-center justify-center gap-2">
+                <span>Start Advanced Speed Challenge</span> <i class="fa-solid fa-bolt"></i>
+            </button>
+        </div>
+
+        <!-- ==================== 2. MCQ GAME PLAY SCREEN ==================== -->
+        <div id="view-game" class="hidden w-full max-w-4xl flex-col gap-4">
+            <!-- HUD Stats Banner -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div class="bg-slate-900 border border-slate-800 p-3 rounded-2xl text-center shadow-lg">
+                    <span class="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Timer</span>
+                    <span id="game-timer" class="text-2xl sm:text-3xl font-display font-bold text-amber-400">60s</span>
+                </div>
+                <div class="bg-slate-900 border border-slate-800 p-3 rounded-2xl text-center shadow-lg">
+                    <span class="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Score</span>
+                    <span id="game-score" class="text-2xl sm:text-3xl font-display font-bold text-brand-purple">0</span>
+                </div>
+                <div class="bg-slate-900 border border-slate-800 p-3 rounded-2xl text-center shadow-lg">
+                    <span class="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Streak</span>
+                    <span id="game-streak" class="text-2xl sm:text-3xl font-display font-bold text-emerald-400">0 <i class="fa-solid fa-fire text-amber-500 text-xl"></i></span>
+                </div>
+                <div class="bg-slate-900 border border-slate-800 p-3 rounded-2xl text-center shadow-lg">
+                    <span class="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Multiplier</span>
+                    <span id="game-multiplier" class="text-2xl sm:text-3xl font-display font-bold text-pink-400">1.0x</span>
+                </div>
+            </div>
+
+            <!-- Problem Card Box -->
+            <div class="bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-8 relative shadow-2xl flex flex-col justify-between min-h-[440px]">
+                
+                <!-- Topic Tag & Game Controls (Pause / Scratchpad / Exit) -->
+                <div class="flex justify-between items-center text-xs font-semibold text-slate-400 flex-wrap gap-2">
+                    <div class="flex items-center gap-2">
+                        <span id="game-topic-badge" class="bg-slate-950 border border-slate-800 text-slate-300 px-3 py-1 rounded-full font-display">
+                            Differentiation
+                        </span>
+                        <button id="pause-game-btn" onclick="togglePauseGame()" class="px-3 py-1 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 transition text-xs flex items-center gap-1 font-display">
+                            <i id="pause-icon" class="fa-solid fa-pause text-amber-400"></i> <span id="pause-text">Pause</span>
+                        </button>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button onclick="toggleScratchpad()" class="text-brand-purple hover:text-purple-400 flex items-center gap-1 font-semibold transition">
+                            <i class="fa-solid fa-pen-to-square"></i> <span id="scratchpad-toggle-text">Scratchpad</span>
+                        </button>
+                        <button onclick="confirmEndChallenge()" class="text-red-400 hover:text-red-300 flex items-center gap-1 font-semibold transition" title="Exit Challenge Early">
+                            <i class="fa-solid fa-arrow-right-from-bracket"></i> Exit Game
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Pause Overlay -->
+                <div id="pause-overlay" class="hidden absolute inset-0 bg-slate-950/90 backdrop-blur-md rounded-3xl z-20 flex flex-col items-center justify-center p-6 text-center space-y-4">
+                    <div class="w-16 h-16 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center text-3xl">
+                        <i class="fa-solid fa-pause"></i>
+                    </div>
+                    <h3 class="text-2xl font-display font-bold text-white">Game Paused</h3>
+                    <p class="text-slate-400 text-xs sm:text-sm max-w-sm">Take a breath! Click below when you are ready to continue.</p>
+                    <button onclick="togglePauseGame()" class="px-6 py-2.5 bg-gradient-to-r from-brand-purple to-brand-pink text-white font-display font-bold text-sm rounded-xl shadow-lg">
+                        Resume Challenge
+                    </button>
+                </div>
+
+                <!-- Math Problem Statement -->
+                <div class="my-4 text-center">
+                    <span id="game-instruction" class="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-2">Solve for x</span>
+                    <div id="game-equation-katex" class="text-xl sm:text-2xl md:text-3xl font-bold text-white tracking-wide py-4 px-6 bg-slate-950 rounded-2xl inline-block border border-slate-800 shadow-inner overflow-x-auto max-w-full">
+                        <!-- Math Rendered Here -->
+                    </div>
+                </div>
+
+                <!-- MCQ Options Grid (4 Cards A, B, C, D) -->
+                <div id="mcq-options-container" class="grid grid-cols-1 sm:grid-cols-2 gap-3 my-2">
+                    <!-- Option Buttons Injected via JS -->
+                </div>
+
+                <!-- Keyboard shortcuts indicator -->
+                <div class="text-center text-[11px] text-slate-500 font-mono">
+                    Hotkeys: Press <kbd class="px-1.5 py-0.5 bg-slate-800 rounded text-slate-300">1</kbd>-<kbd class="px-1.5 py-0.5 bg-slate-800 rounded text-slate-300">4</kbd> or <kbd class="px-1.5 py-0.5 bg-slate-800 rounded text-slate-300">A</kbd>-<kbd class="px-1.5 py-0.5 bg-slate-800 rounded text-slate-300">D</kbd>
+                </div>
+
+                <!-- Guiding Hints & Actions (NEVER reveals correct answer) -->
+                <div class="flex gap-2 pt-2 border-t border-slate-800/80">
+                    <button type="button" onclick="getStrategicHint()" class="flex-1 py-2 rounded-xl border border-slate-800 text-slate-300 font-display text-xs hover:bg-slate-800/60 transition flex items-center justify-center gap-1">
+                        <i class="fa-regular fa-lightbulb text-amber-400"></i> Strategy Hint (<span id="hint-count">0</span>)
+                    </button>
+                    <button type="button" onclick="skipProblem()" class="py-2 px-4 rounded-xl bg-slate-800/80 text-slate-300 font-display text-xs hover:bg-slate-800 transition flex items-center justify-center gap-1">
+                        <i class="fa-solid fa-arrow-right"></i> Skip
+                    </button>
+                </div>
+
+                <!-- Strategic Guiding Prompt Box -->
+                <div id="game-explanation" class="hidden mt-3 p-3 rounded-2xl bg-slate-950 border border-amber-500/30 text-slate-300 text-xs space-y-1">
+                    <div class="font-bold text-amber-400 flex items-center gap-1.5">
+                        <i class="fa-solid fa-compass"></i> Guiding Method:
+                    </div>
+                    <div id="game-explanation-steps" class="space-y-1 text-slate-300"></div>
+                </div>
+            </div>
+
+            <!-- Scratchpad Canvas Area -->
+            <div id="scratchpad-container" class="hidden bg-slate-900 rounded-3xl p-4 border border-slate-800 shadow-2xl space-y-2">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <span class="font-display font-semibold text-xs text-slate-300 flex items-center gap-1.5">
+                        <i class="fa-solid fa-pencil text-brand-purple"></i> Rough Work Canvas
+                    </span>
+                    <div class="flex items-center gap-2">
+                        <div class="flex gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800">
+                            <button onclick="setPenColor('#8B5CF6')" class="w-5 h-5 rounded-full bg-purple-500"></button>
+                            <button onclick="setPenColor('#EC4899')" class="w-5 h-5 rounded-full bg-pink-500"></button>
+                            <button onclick="setPenColor('#10B981')" class="w-5 h-5 rounded-full bg-emerald-500"></button>
+                            <button onclick="setPenColor('#F59E0B')" class="w-5 h-5 rounded-full bg-amber-500"></button>
+                            <button onclick="setPenColor('#FFFFFF')" class="w-5 h-5 rounded-full bg-white"></button>
+                        </div>
+                        <button onclick="clearScratchpad()" class="text-xs px-2.5 py-1 rounded-lg bg-red-950/60 text-red-400 hover:bg-red-900/60 border border-red-800/50 font-medium transition">
+                            Clear
+                        </button>
+                    </div>
+                </div>
+                <div class="relative w-full h-44 bg-slate-950 rounded-2xl border border-slate-800 overflow-hidden">
+                    <canvas id="scratchpad" class="scratchpad-canvas w-full h-full"></canvas>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- ==================== 3. RESULTS SUMMARY SCREEN ==================== -->
+        <div id="view-results" class="hidden w-full max-w-3xl bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
+            <div class="text-center space-y-2">
+                <div class="w-16 h-16 bg-gradient-to-tr from-amber-500 to-yellow-400 text-slate-900 rounded-3xl flex items-center justify-center text-3xl mx-auto shadow-lg shadow-amber-500/20">
+                    <i class="fa-solid fa-award"></i>
+                </div>
+                <h2 class="text-3xl font-display font-bold text-white">Speed Challenge Finished!</h2>
+                <p class="text-slate-400 text-sm">MCQ Performance Statistics Summary</p>
+            </div>
+
+            <!-- Score Stats Summary -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-left">
+                <div class="bg-slate-950 border border-slate-800 p-3.5 rounded-2xl">
+                    <span class="text-[10px] text-slate-400 font-bold block uppercase tracking-wider">Final Score</span>
+                    <span id="res-score" class="text-2xl font-display font-bold text-brand-purple">0</span>
+                </div>
+                <div class="bg-slate-950 border border-slate-800 p-3.5 rounded-2xl">
+                    <span class="text-[10px] text-slate-400 font-bold block uppercase tracking-wider">Accuracy</span>
+                    <span id="res-accuracy" class="text-2xl font-display font-bold text-emerald-400">100%</span>
+                </div>
+                <div class="bg-slate-950 border border-slate-800 p-3.5 rounded-2xl">
+                    <span class="text-[10px] text-slate-400 font-bold block uppercase tracking-wider">Max Streak</span>
+                    <span id="res-streak" class="text-2xl font-display font-bold text-amber-400">0</span>
+                </div>
+                <div class="bg-slate-950 border border-slate-800 p-3.5 rounded-2xl">
+                    <span class="text-[10px] text-slate-400 font-bold block uppercase tracking-wider">Solved</span>
+                    <span id="res-ratio" class="text-2xl font-display font-bold text-blue-400">0/0</span>
+                </div>
+            </div>
+
+            <!-- Question Review Log (Shows Correct vs Incorrect WITHOUT exposing answers) -->
+            <div class="space-y-2 text-left">
+                <h3 class="font-display font-bold text-sm text-slate-300">Question Accuracy Log:</h3>
+                <div id="res-review-list" class="max-h-48 overflow-y-auto space-y-2 pr-1">
+                    <!-- Dynamic review items inserted here -->
+                </div>
+            </div>
+
+            <!-- Action Controls -->
+            <div class="flex gap-3 pt-2">
+                <button onclick="goToSetup()" class="flex-1 py-3.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-display font-bold rounded-2xl transition">
+                    <i class="fa-solid fa-sliders mr-1"></i> Configure
+                </button>
+                <button onclick="startChallenge()" class="flex-1 py-3.5 bg-gradient-to-r from-brand-purple via-brand-pink to-brand-cyan hover:opacity-95 text-white font-display font-bold rounded-2xl shadow-lg shadow-purple-500/20 transition">
+                    <i class="fa-solid fa-rotate-right mr-1"></i> Play Again
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <footer class="bg-slate-900 border-t border-slate-800 py-3 text-center text-xs text-slate-500">
+        <p>MathQuest MCQ • Doubled Difficulty Grade 7 to A-Level Mathematics</p>
+    </footer>
+
+    <script>
+// Utility to calculate Greatest Common Divisor (GCD)
+function gcd(a, b) {
+    a = Math.abs(a);
+    b = Math.abs(b);
+    while (b) {
+        let t = b;
+        b = a % b;
+        a = t;
+    }
+    return a || 1;
+}
+
+// Utility to calculate GCD of multiple numbers
+function gcdArray(arr) {
+    return arr.reduce((acc, val) => gcd(acc, val), arr[0] || 1);
+}
+
+// Format linear expression ax + b in simplest form
+function formatLinear(a, b, varName = 'x') {
+    if (a === 0 && b === 0) return '0';
+    if (a === 0) return `${b}`;
+    
+    // GCF factoring check
+    let gcf = gcd(a, b);
+    if (gcf > 1) {
+        let sa = a / gcf;
+        let sb = b / gcf;
+        let inner = formatLinear(sa, sb, varName);
+        return `${gcf}(${inner})`;
+    }
+
+    let aStr = '';
+    if (a === 1) aStr = varName;
+    else if (a === -1) aStr = `-${varName}`;
+    else aStr = `${a}${varName}`;
+
+    if (b === 0) return aStr;
+    if (b > 0) return `${aStr} + ${b}`;
+    return `${aStr} - ${Math.abs(b)}`;
+}
+
+// Format quadratic polynomial ax^2 + bx + c in fully simplified/factored form
+function formatQuadraticFactored(a, b, c) {
+    let gcf = gcdArray([a, b, c]);
+    if (a < 0) gcf = -gcf;
+    
+    let sa = a / gcf;
+    let sb = b / gcf;
+    let sc = c / gcf;
+
+    let leadingPrefix = gcf === 1 ? '' : (gcf === -1 ? '-' : `${gcf}`);
+    
+    if (sa === 1) {
+        for (let m = -50; m <= 50; m++) {
+            if (m === 0) continue;
+            if (sc % m === 0) {
+                let n = sc / m;
+                if (m + n === sb) {
+                    let part1 = m > 0 ? `(x + ${m})` : `(x - ${Math.abs(m)})`;
+                    let part2 = n > 0 ? `(x + ${n})` : `(x - ${Math.abs(n)})`;
+                    if (m === n) return `${leadingPrefix}${part1}²`;
+                    return `${leadingPrefix}${part1}${part2}`;
+                }
+            }
+        }
+    }
+    
+    let term1 = sa === 1 ? 'x²' : (sa === -1 ? '-x²' : `${sa}x²`);
+    let term2 = sb === 0 ? '' : (sb > 0 ? ` + ${sb === 1 ? '' : sb}x` : ` - ${Math.abs(sb) === 1 ? '' : Math.abs(sb)}x`);
+    let term3 = sc === 0 ? '' : (sc > 0 ? ` + ${sc}` : ` - ${Math.abs(sc)}`);
+    
+    let inner = `${term1}${term2}${term3}`;
+    return leadingPrefix ? `${leadingPrefix}(${inner})` : inner;
+}
+
+// Global Game State
+let soundEnabled = true;
+let isPaused = false;
+let totalXP = parseInt(localStorage.getItem('mq_xp_v5')) || 0;
+let highScore = parseInt(localStorage.getItem('mq_highscore_v5')) || 0;
+let configTopic = 'linear-eq';
+let configDifficulty = 'medium';
+let configTimer = 60;
+let gameTimer = null;
+let gameScore = 0;
+let currentStreak = 0;
+let maxStreak = 0;
+let comboMultiplier = 1.0;
+let totalAttempted = 0;
+let totalCorrect = 0;
+let timeRemaining = 60;
+let gameActive = false;
+let problemHistory = [];
+let currentProblem = null;
+let hintLevel = 0;
+
+// Toggle audio status
+function toggleSound() {
+    soundEnabled = !soundEnabled;
+    const icon = document.getElementById('sound-icon');
+    if (soundEnabled) {
+        icon.className = 'fa-solid fa-volume-high';
+    } else {
+        icon.className = 'fa-solid fa-volume-xmark';
+    }
+}
+
+// Web Audio sound synthesizer
+function playSound(type) {
+    if (!soundEnabled) return;
+    try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        const now = ctx.currentTime;
+        if (type === 'correct') {
+            osc.frequency.setValueAtTime(523.25, now);
+            osc.frequency.exponentialRampToValueAtTime(659.25, now + 0.1);
+            osc.frequency.exponentialRampToValueAtTime(783.99, now + 0.2);
+            gain.gain.setValueAtTime(0.15, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+            osc.start(now);
+            osc.stop(now + 0.3);
+        } else if (type === 'wrong') {
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(180, now);
+            osc.frequency.exponentialRampToValueAtTime(110, now + 0.25);
+            gain.gain.setValueAtTime(0.2, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+            osc.start(now);
+            osc.stop(now + 0.25);
+        } else if (type === 'start') {
+            osc.frequency.setValueAtTime(440, now);
+            osc.frequency.exponentialRampToValueAtTime(880, now + 0.15);
+            gain.gain.setValueAtTime(0.15, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+            osc.start(now);
+            osc.stop(now + 0.2);
+        }
+    } catch (e) {}
+}
+
+function switchView(viewName) {
+    document.getElementById('view-setup').classList.add('hidden');
+    document.getElementById('view-game').classList.add('hidden');
+    document.getElementById('view-game').classList.remove('flex');
+    document.getElementById('view-results').classList.add('hidden');
+
+    if (viewName === 'setup') {
+        document.getElementById('view-setup').classList.remove('hidden');
+        renderKaTeXPreviews();
+        updateSetupSummary();
+    } else if (viewName === 'game') {
+        document.getElementById('view-game').classList.remove('hidden');
+        document.getElementById('view-game').classList.add('flex');
+    } else if (viewName === 'results') {
+        document.getElementById('view-results').classList.remove('hidden');
+    }
+}
+
+function filterLevel(levelKey) {
+    document.querySelectorAll('.level-tab-btn').forEach(btn => {
+        btn.className = "level-tab-btn px-3.5 py-1.5 rounded-xl font-display font-semibold text-xs transition bg-slate-800 text-slate-300 hover:bg-slate-700";
+    });
+    document.getElementById(`level-tab-${levelKey}`).className = "level-tab-btn px-3.5 py-1.5 rounded-xl font-display font-semibold text-xs transition bg-brand-purple text-white shadow-md";
+
+    const sections = ['juniors', 'seniors', 'alevel', 'further'];
+    sections.forEach(sec => {
+        const secEl = document.getElementById(`section-${sec}`);
+        if (!secEl) return;
+        if (levelKey === 'all' || levelKey === sec) {
+            secEl.classList.remove('hidden');
+        } else {
+            secEl.classList.add('hidden');
+        }
+    });
+
+    filterTopics();
+}
+
+function filterTopics() {
+    const query = document.getElementById('topic-search').value.toLowerCase().trim();
+    const clearBtn = document.getElementById('clear-search-btn');
+    if (query.length > 0) {
+        clearBtn.classList.remove('hidden');
+    } else {
+        clearBtn.classList.add('hidden');
+    }
+
+    let totalVisible = 0;
+    const cards = document.querySelectorAll('.topic-card');
+
+    cards.forEach(card => {
+        const title = card.querySelector('h3').innerText.toLowerCase();
+        const desc = card.querySelector('p').innerText.toLowerCase();
+        const keywords = (card.dataset.keywords || '').toLowerCase();
+        const matchesQuery = !query || title.includes(query) || desc.includes(query) || keywords.includes(query);
+
+        if (matchesQuery) {
+            card.classList.remove('hidden');
+            totalVisible++;
+        } else {
+            card.classList.add('hidden');
+        }
+    });
+
+    const noResults = document.getElementById('no-topics-found');
+    if (totalVisible === 0) {
+        noResults.classList.remove('hidden');
+    } else {
+        noResults.classList.add('hidden');
+    }
+}
+
+function clearSearch() {
+    document.getElementById('topic-search').value = '';
+    filterTopics();
+}
+
+function selectTopic(topicKey) {
+    configTopic = topicKey;
+    document.querySelectorAll('.topic-card').forEach(card => {
+        const icon = card.querySelector('.topic-check');
+        if (card.id === `topic-card-${topicKey}`) {
+            card.className = "topic-card p-3.5 rounded-2xl border-2 border-brand-purple bg-brand-purple/10 text-white cursor-pointer transition flex flex-col justify-between hover:border-brand-purple shadow-md";
+            if (icon) icon.className = "fa-solid fa-circle-check text-brand-purple topic-check";
+        } else {
+            card.className = "topic-card p-3.5 rounded-2xl border-2 border-slate-800 bg-slate-900 text-slate-300 cursor-pointer transition flex flex-col justify-between hover:border-slate-700";
+            if (icon) icon.className = "fa-solid fa-circle text-slate-700 topic-check";
+        }
+    });
+    updateSetupSummary();
+}
+
+function selectRandomTopic() {
+    const cards = Array.from(document.querySelectorAll('.topic-card:not(.hidden)'));
+    if (cards.length === 0) return;
+    const randomCard = cards[Math.floor(Math.random() * cards.length)];
+    const topicId = randomCard.id.replace('topic-card-', '');
+    selectTopic(topicId);
+}
+
+function updateSetupSummary() {
+    const selectedCard = document.getElementById(`topic-card-${configTopic}`);
+    if (selectedCard) {
+        const title = selectedCard.querySelector('h3').innerText;
+        document.getElementById('summary-topic-title').innerText = title;
+    }
+    document.getElementById('summary-diff').innerText = configDifficulty;
+    document.getElementById('summary-timer').innerText = typeof configTimer === 'number' ? `${configTimer}s` : configTimer;
+}
+
+function selectDifficulty(diff) {
+    configDifficulty = diff;
+    const colors = { easy: 'emerald', medium: 'amber', hard: 'pink' };
+
+    ['easy', 'medium', 'hard'].forEach(d => {
+        const btn = document.getElementById(`diff-${d}`);
+        if (d === diff) {
+            btn.className = `diff-btn py-2.5 rounded-xl border-2 font-display font-bold text-xs text-center transition bg-${colors[d]}-500/10 border-${colors[d]}-500 text-${colors[d]}-400`;
+        } else {
+            btn.className = "diff-btn py-2.5 rounded-xl border-2 font-display font-bold text-xs text-center transition border-slate-800 bg-slate-950 text-slate-400 hover:border-slate-700";
+        }
+    });
+    updateSetupSummary();
+}
+
+function selectTimer(sec) {
+    configTimer = sec;
+    [30, 60, 120, 'endless'].forEach(t => {
+        const btn = document.getElementById(`timer-${t}`);
+        if (t === sec) {
+            btn.className = "timer-btn py-2.5 rounded-xl border-2 font-display font-bold text-xs transition bg-amber-500/10 border-amber-500 text-amber-400";
+        } else {
+            btn.className = "timer-btn py-2.5 rounded-xl border-2 font-display font-bold text-xs transition border-slate-800 bg-slate-950 text-slate-400 hover:border-slate-700";
+        }
+    });
+    updateSetupSummary();
+}
+
+function goToSetup() {
+    if (gameTimer) clearInterval(gameTimer);
+    gameActive = false;
+    switchView('setup');
+}
+
+function getRandomInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function getRandomNonZero(min, max) {
+    let v = 0;
+    while (v === 0) v = getRandomInt(min, max);
+    return v;
+}
+
+function shuffleOptions(correctOption, distractor1, distractor2, distractor3) {
+    const raw = [
+        { text: correctOption, isCorrect: true },
+        { text: distractor1, isCorrect: false },
+        { text: distractor2, isCorrect: false },
+        { text: distractor3, isCorrect: false }
+    ];
+    for (let i = raw.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [raw[i], raw[j]] = [raw[j], raw[i]];
+    }
+    return raw;
+}
+
+function generateMCQProblem(topic, difficulty) {
+    let instruction = "";
+    let latexEq = "";
+    let options = [];
+    let hints = [];
+
+    const subType = getRandomInt(1, 4);
+
+    if (topic === 'linear-eq') {
+        instruction = "Solve for x";
+        if (subType === 1) {
+            const x = getRandomNonZero(-8, 8);
+            const a = getRandomInt(2, 5);
+            const b = getRandomInt(2, 5);
+            const c = getRandomInt(1, 6);
+            const rhs = Math.round((a * x + c) / b);
+            const cCorrect = (rhs * b - c) / a;
+            latexEq = `\\frac{${a}x + ${c}}{${b}} = ${rhs}`;
+            options = shuffleOptions(`x = ${cCorrect}`, `x = ${cCorrect + 2}`, `x = ${cCorrect - 3}`, `x = ${-cCorrect}`);
+            hints = ["Multiply both sides by denominator.", "Isolate x term by subtracting constant."];
+        } else {
+            const x = getRandomNonZero(-6, 6);
+            const a = getRandomInt(2, 4);
+            const b = getRandomInt(1, 5);
+            const c = getRandomInt(2, 5);
+            const rhsVal = a * (x + b) - c * (x - 1);
+            latexEq = `${a}(x + ${b}) - ${c}(x - 1) = ${rhsVal}`;
+            options = shuffleOptions(`x = ${x}`, `x = ${x + 3}`, `x = ${x - 2}`, `x = ${-x}`);
+            hints = ["Expand all brackets carefully watching negative signs.", "Collect like terms for x on left hand side."];
+        }
+
+    } else if (topic === 'expansion') {
+        instruction = "Expand and simplify completely";
+        const a = getRandomInt(2, 4);
+        const b = getRandomNonZero(-4, 4);
+        const c = getRandomInt(1, 3);
+        const d = getRandomNonZero(-4, 4);
+        latexEq = `(${a}x ${b >= 0 ? '+ ' + b : '- ' + Math.abs(b)})(${c}x ${d >= 0 ? '+ ' + d : '- ' + Math.abs(d)})`;
+        const coeffX2 = a * c;
+        const coeffX = a * d + b * c;
+        const constTerm = b * d;
+        const correctStr = `${coeffX2}x^2 ${coeffX >= 0 ? '+ ' + coeffX : '- ' + Math.abs(coeffX)}x ${constTerm >= 0 ? '+ ' + constTerm : '- ' + Math.abs(constTerm)}`;
+        const d1 = `${coeffX2}x^2 ${-coeffX >= 0 ? '+ ' + (-coeffX) : '- ' + Math.abs(-coeffX)}x ${constTerm >= 0 ? '+ ' + constTerm : '- ' + Math.abs(constTerm)}`;
+        const d2 = `${coeffX2}x^2 ${coeffX >= 0 ? '+ ' + coeffX : '- ' + Math.abs(coeffX)}x ${-constTerm >= 0 ? '+ ' + (-constTerm) : '- ' + Math.abs(-constTerm)}`;
+        const d3 = `${coeffX2}x^2 ${constTerm >= 0 ? '+ ' + constTerm : '- ' + Math.abs(constTerm)}`;
+        options = shuffleOptions(correctStr, d1, d2, d3);
+        hints = ["Apply FOIL to non-monic coefficients: (ax+b)(cx+d).", "Middle term coefficient is (ad + bc)."];
+
+    } else if (topic === 'factorisation') {
+        instruction = "Factorise fully";
+        if (subType === 1) {
+            const p = getRandomInt(2, 3);
+            const q = getRandomInt(1, 4);
+            const r = getRandomInt(1, 3);
+            const s = getRandomInt(1, 5);
+            const a = p * r;
+            const b = p * s + q * r;
+            const c = q * s;
+            latexEq = `${a}x^2 + ${b}x + ${c}`;
+            options = shuffleOptions(`(${p}x + ${q})(${r}x + ${s})`, `(${p}x - ${q})(${r}x + ${s})`, `(${a}x + ${q})(x + ${s})`, `(${p}x + ${s})(${r}x + ${q})`);
+            hints = ["Find two numbers that multiply to ac and add up to b.", "Use grouping by splitting the middle term."];
+        } else {
+            const k = getRandomInt(2, 5);
+            latexEq = `16x^4 - ${Math.pow(k, 4)}`;
+            options = shuffleOptions(`(4x^2 + ${k*k})(2x + ${k})(2x - ${k})`, `(4x^2 - ${k*k})^2`, `(16x^2 + ${k*k})(x^2 - ${k*k})`, `(4x + ${k})^4`);
+            hints = ["Apply difference of squares twice: a^4 - b^4 = (a^2+b^2)(a^2-b^2).", "Factorise the linear difference of squares again."];
+        }
+
+    } else if (topic === 'simultaneous') {
+        instruction = "Find the x-coordinate of intersection";
+        const x = getRandomInt(1, 5);
+        const y = x * x - 3;
+        latexEq = `\\begin{cases} y = x^2 - 3 \\\\ y = ${2*x - 3}x \\end{cases}`;
+        options = shuffleOptions(`x = ${x}`, `x = ${x + 2}`, `x = ${x - 1}`, `x = ${-x}`);
+        hints = ["Equate both expressions for y: x^2 - 3 = mx + c.", "Solve the resulting quadratic equation in x."];
+
+    } else if (topic === 'index-radicals') {
+        instruction = "Rationalise the denominator completely";
+        const a = getRandomInt(2, 5);
+        const b = getRandomInt(2, 3);
+        latexEq = `\\frac{${a}}{\\sqrt{5} - \\sqrt{${b}}}`;
+        options = shuffleOptions(`\\frac{${a}(\\sqrt{5} + \\sqrt{${b}})}{${5 - b}}`, `\\frac{${a}(\\sqrt{5} - \\sqrt{${b}})}{5 + b}`, `\\frac{\\sqrt{5} + \\sqrt{${b}}}{${a}}`, `${a}(\\sqrt{5} + \\sqrt{${b}})`);
+        hints = ["Multiply numerator and denominator by conjugate: \\sqrt{5} + \\sqrt{b}.", "Use (x-y)(x+y) = x^2 - y^2 in denominator."];
+
+    } else if (topic === 'quadratic-eq') {
+        instruction = "Complete the square into a(x - h)^2 + k";
+        const a = getRandomInt(2, 4);
+        const h = getRandomInt(1, 5);
+        const k = getRandomInt(1, 8);
+        const b = -2 * a * h;
+        const c = a * h * h + k;
+        latexEq = `${a}x^2 ${b >= 0 ? '+ ' + b : '- ' + Math.abs(b)}x + ${c}`;
+        options = shuffleOptions(`${a}(x - ${h})^2 + ${k}`, `${a}(x + ${h})^2 + ${k}`, `${a}(x - ${h})^2 - ${k}`, `(x - ${a*h})^2 + ${k}`);
+        hints = ["Factor out leading coefficient a from x terms.", "Half the linear coefficient inside brackets before squaring."];
+
+    } else if (topic === 'inequalities-abs') {
+        instruction = "Solve the non-linear absolute inequality";
+        const a = getRandomInt(2, 4);
+        latexEq = `|${a}x - 1| > ${a + 3}`;
+        const val = (a + 4) / a;
+        options = shuffleOptions(`x > ${val.toFixed(1)} \\text{ or } x < -1.0`, `x < ${val.toFixed(1)}`, `-1.0 < x < ${val.toFixed(1)}`, `x > ${val.toFixed(1)}`);
+        hints = ["Split |U| > k into U > k or U < -k.", "Solve both linear inequalities independently."];
+
+    } else if (topic === 'sequences-series') {
+        instruction = "Calculate the sum to infinity S_{\\infty}";
+        const a = getRandomInt(6, 24);
+        const num = 1;
+        const den = getRandomInt(2, 4);
+        latexEq = `a = ${a}, \\quad r = \\frac{${num}}{${den}}`;
+        const sInf = (a * den) / (den - num);
+        options = shuffleOptions(`S_{\\infty} = ${sInf}`, `S_{\\infty} = ${a * den}`, `S_{\\infty} = ${sInf / 2}`, `S_{\\infty} = ${a + den}`);
+        hints = ["Use infinite geometric series sum formula: S_{\\infty} = \\frac{a}{1 - r}.", "Ensure |r| < 1."];
+
+    } else if (topic === 'trig-identities') {
+        instruction = "Solve for \\theta \\in [0^\\circ, 180^\\circ]";
+        latexEq = `2\\cos^2(\\theta) + 3\\sin(\\theta) - 3 = 0`;
+        options = shuffleOptions(`30^\\circ, 90^\\circ, 150^\\circ`, `45^\\circ, 135^\\circ`, `60^\\circ, 120^\\circ`, `0^\\circ, 180^\\circ`);
+        hints = ["Substitute \\cos^2(\\theta) = 1 - \\sin^2(\\theta).", "Form quadratic in \\sin(\\theta) and factorise."];
+
+    } else if (topic === 'logarithms') {
+        instruction = "Solve for x using change-of-base";
+        latexEq = `\\log_2(x) + \\log_x(16) = 5`;
+        options = shuffleOptions(`x = 2, 16`, `x = 4, 8`, `x = 3, 9`, `x = 1, 32`);
+        hints = ["Apply change of base: \\log_x(16) = \\frac{4}{\\log_2(x)}.", "Let u = \\log_2(x) to form quadratic u^2 - 5u + 4 = 0."];
+
+    } else if (topic === 'differentiation') {
+        instruction = "Find \\frac{dy}{dx} via implicit differentiation";
+        latexEq = `x^2 + y^2 = 4xy`;
+        options = shuffleOptions(`\\frac{2y - x}{y - 2x}`, `\\frac{x - 2y}{2x - y}`, `\\frac{2x + y}{2y + x}`, `\\frac{y}{x}`);
+        hints = ["Differentiate terms with respect to x: \\frac{d}{dx}[y^2] = 2y \\frac{dy}{dx}.", "Use Product Rule on 4xy."];
+
+    } else if (topic === 'integration') {
+        instruction = "Evaluate \\int x e^{2x} \, dx";
+        latexEq = `\\int x e^{2x} \\, dx`;
+        options = shuffleOptions(`\\frac{1}{2}x e^{2x} - \\frac{1}{4}e^{2x} + C`, `x e^{2x} - e^{2x} + C`, `\\frac{1}{4}x^2 e^{2x} + C`, `\\frac{1}{2}x e^{2x} + \\frac{1}{4}e^{2x} + C`);
+        hints = ["Apply Integration by Parts: \\int u dv = uv - \\int v du.", "Set u = x and dv = e^{2x} dx."];
+
+    } else if (topic === 'functions') {
+        instruction = "Find the inverse function f^{-1}(x)";
+        latexEq = `f(x) = \\frac{e^x - 2}{e^x + 1}`;
+        options = shuffleOptions(`\\ln\\left(\\frac{x + 2}{1 - x}\\right)`, `\\ln\\left(\\frac{x - 2}{x + 1}\\right)`, `e^{\\frac{x+2}{1-x}}`, `\\ln(x + 2)`);
+        hints = ["Set y = f(x) and multiply out denominator.", "Isolate e^y before taking natural log."];
+
+    } else if (topic === 'graphs') {
+        instruction = "Find oblique asymptote equation";
+        latexEq = `y = \\frac{2x^2 + 5x + 3}{x + 1}`;
+        options = shuffleOptions(`y = 2x + 3`, `y = 2x`, `y = x + 5`, `y = 2x + 5`);
+        hints = ["Perform polynomial long division: \\frac{P(x)}{Q(x)} = mx + c + \\frac{R}{Q(x)}.", "Oblique asymptote is the quotient polynomial."];
+
+    } else if (topic === 'limits') {
+        instruction = "Evaluate the limit using L'Hôpital's Rule";
+        latexEq = `\\lim_{x \\to 0} \\frac{e^{3x} - 1 - 3x}{x^2}`;
+        options = shuffleOptions(`\\frac{9}{2}`, `3`, `9`, `0`);
+        hints = ["Check for indeterminate form \\frac{0}{0}.", "Differentiate numerator and denominator twice."];
+
+    } else if (topic === 'binomial-theorem') {
+        instruction = "Find x^2 term in expansion of (1 - 4x)^{-1/2}";
+        latexEq = `(1 - 4x)^{-1/2}`;
+        options = shuffleOptions(`6x^2`, `2x^2`, `24x^2`, `12x^2`);
+        hints = ["Formula: (1+u)^n = 1 + nu + \\frac{n(n-1)}{2!} u^2 + ...", "Substitute u = -4x and n = -1/2."];
+
+    } else if (topic === 'partial-fractions') {
+        instruction = "Find constant A for repeated factor denominator";
+        latexEq = `\\frac{3x^2 + 2x + 1}{x(x-1)^2} = \\frac{A}{x} + \\frac{B}{x-1} + \\frac{C}{(x-1)^2}`;
+        options = shuffleOptions(`A = 1`, `A = 3`, `A = -2`, `A = 6`);
+        hints = ["Multiply by x(x-1)^2 to clear fractions.", "Substitute x = 0 to directly solve for A."];
+
+    } else if (topic === 'complex-numbers') {
+        instruction = "Calculate z^6 using De Moivre's Theorem";
+        latexEq = `z = 1 + i \\sqrt{3} \\implies z^6`;
+        options = shuffleOptions(`-64`, `64`, `64i`, `-64i`);
+        hints = ["Convert to polar form: r = 2, \\theta = \\pi/3.", "De Moivre: z^n = r^n e^{i n \\theta}."];
+
+    } else if (topic === 'matrices-vectors') {
+        instruction = "Compute cross product \\vec{u} \\times \\vec{v}";
+        latexEq = `\\vec{u} = \\langle 1, 2, 3 \\rangle, \\quad \\vec{v} = \\langle 4, 0, -1 \\rangle`;
+        options = shuffleOptions(`\\langle -2, 13, -8 \\rangle`, `\\langle 2, -13, 8 \\rangle`, `\\langle 4, 0, -3 \\rangle`, `\\langle -2, 11, -8 \\rangle`);
+        hints = ["Setup 3x3 determinant with basis vectors \\hat{i}, \\hat{j}, \\hat{k}.", "Expand along top row."];
+
+    } else if (topic === 'diff-equations') {
+        instruction = "Find general solution y(x)";
+        latexEq = `\\frac{d^2y}{dx^2} - 7\\frac{dy}{dx} + 12y = 0`;
+        options = shuffleOptions(`y = C_1 e^{3x} + C_2 e^{4x}`, `y = C_1 e^{-3x} + C_2 e^{-4x}`, `y = (C_1 + C_2 x) e^{7x}`, `y = C_1 \\cos(3x) + C_2 \\sin(4x)`);
+        hints = ["Solve characteristic auxiliary equation: r^2 - 7r + 12 = 0.", "Factorise into (r - 3)(r - 4) = 0."];
+    }
+
+    return { topic, instruction, latexEq, options, hints };
+}
+
+function nextGameProblem() {
+    hintLevel = 0;
+    document.getElementById('hint-count').innerText = 0;
+    document.getElementById('game-explanation').classList.add('hidden');
+    document.getElementById('game-explanation-steps').innerHTML = '';
+
+    currentProblem = generateMCQProblem(configTopic, configDifficulty);
+
+    // Topic badge label
+    const activeCard = document.getElementById(`topic-card-${configTopic}`);
+    const topicName = activeCard ? activeCard.querySelector('h3').innerText : configTopic;
+    document.getElementById('game-topic-badge').innerText = topicName;
+
+    // Instruction label
+    document.getElementById('game-instruction').innerText = currentProblem.instruction;
+
+    // Render LaTeX equation
+    const eqContainer = document.getElementById('game-equation-katex');
+    try {
+        katex.render(currentProblem.latexEq, eqContainer, { throwOnError: false, displayMode: true });
+    } catch (e) {
+        eqContainer.innerText = currentProblem.latexEq;
+    }
+
+    // Render MCQ option buttons
+    const optionsContainer = document.getElementById('mcq-options-container');
+    optionsContainer.innerHTML = '';
+
+    const labels = ['A', 'B', 'C', 'D'];
+    currentProblem.options.forEach((opt, idx) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = "w-full p-4 rounded-2xl bg-slate-950 border-2 border-slate-800 hover:border-brand-purple text-left transition flex items-center gap-3 group active:scale-[0.98]";
+        btn.onclick = () => selectMCQOption(idx);
+
+        const badge = document.createElement('span');
+        badge.className = "w-8 h-8 rounded-xl bg-slate-800 group-hover:bg-brand-purple text-slate-300 group-hover:text-white font-display font-bold text-sm flex items-center justify-center shrink-0 transition";
+        badge.innerText = labels[idx];
+
+        const textSpan = document.createElement('span');
+        textSpan.className = "font-mono text-sm sm:text-base text-slate-200 group-hover:text-white overflow-x-auto";
+        
+        try {
+            katex.render(opt.text, textSpan, { throwOnError: false });
+        } catch (e) {
+            textSpan.innerText = opt.text;
+        }
+
+        btn.appendChild(badge);
+        btn.appendChild(textSpan);
+        optionsContainer.appendChild(btn);
+    });
+}
+
+function renderKaTeXPreviews() {
+    document.querySelectorAll('.katex-preview').forEach(el => {
+        const math = el.dataset.katex;
+        if (math) {
+            try {
+                katex.render(math, el, { throwOnError: false });
+            } catch (e) {}
+        }
+    });
+}
+
+function startChallenge() {
+    gameScore = 0;
+    currentStreak = 0;
+    maxStreak = 0;
+    comboMultiplier = 1.0;
+    totalAttempted = 0;
+    totalCorrect = 0;
+    timeRemaining = configTimer === 'endless' ? '∞' : configTimer;
+    gameActive = true;
+    isPaused = false;
+    problemHistory = [];
+
+    document.getElementById('pause-text').innerText = 'Pause';
+    document.getElementById('pause-icon').className = 'fa-solid fa-pause text-amber-400';
+    document.getElementById('pause-overlay').classList.add('hidden');
+
+    document.getElementById('game-score').innerText = gameScore;
+    document.getElementById('game-streak').innerHTML = `0 <i class="fa-solid fa-fire text-amber-500 text-xl"></i>`;
+    document.getElementById('game-multiplier').innerText = '1.0x';
+    document.getElementById('game-timer').innerText = typeof timeRemaining === 'number' ? `${timeRemaining}s` : timeRemaining;
+
+    playSound('start');
+    switchView('game');
+    nextGameProblem();
+
+    if (gameTimer) clearInterval(gameTimer);
+    if (typeof configTimer === 'number') {
+        gameTimer = setInterval(() => {
+            if (isPaused) return;
+            timeRemaining--;
+            document.getElementById('game-timer').innerText = `${timeRemaining}s`;
+
+            if (timeRemaining <= 0) {
+                endChallenge();
+            }
+        }, 1000);
+    }
+}
+
+function togglePauseGame() {
+    if (!gameActive) return;
+    isPaused = !isPaused;
+    const pauseBtnText = document.getElementById('pause-text');
+    const pauseIcon = document.getElementById('pause-icon');
+    const pauseOverlay = document.getElementById('pause-overlay');
+
+    if (isPaused) {
+        pauseBtnText.innerText = 'Resume';
+        pauseIcon.className = 'fa-solid fa-play text-emerald-400';
+        pauseOverlay.classList.remove('hidden');
+    } else {
+        pauseBtnText.innerText = 'Pause';
+        pauseIcon.className = 'fa-solid fa-pause text-amber-400';
+        pauseOverlay.classList.add('hidden');
+    }
+}
+
+function confirmEndChallenge() {
+    if (!gameActive) return;
+    endChallenge();
+}
+
+function selectMCQOption(chosenIdx) {
+    if (!gameActive || isPaused || !currentProblem) return;
+
+    const chosen = currentProblem.options[chosenIdx];
+    totalAttempted++;
+
+    const isCorrect = chosen.isCorrect;
+
+    problemHistory.push({
+        equation: currentProblem.latexEq,
+        isCorrect: isCorrect
+    });
+
+    if (isCorrect) {
+        playSound('correct');
+        currentStreak++;
+        if (currentStreak > maxStreak) maxStreak = currentStreak;
+
+        comboMultiplier = 1.0 + Math.min(Math.floor(currentStreak / 3) * 0.25, 1.25);
+        const points = Math.round(25 * comboMultiplier);
+        gameScore += points;
+        totalCorrect++;
+        totalXP += points;
+
+        localStorage.setItem('mq_xp_v5', totalXP);
+        if (gameScore > highScore) {
+            highScore = gameScore;
+            localStorage.setItem('mq_highscore_v5', highScore);
+        }
+
+        document.getElementById('game-score').innerText = gameScore;
+        document.getElementById('game-streak').innerHTML = `${currentStreak} <i class="fa-solid fa-fire text-amber-500 text-xl animate-bounce-short"></i>`;
+        document.getElementById('game-multiplier').innerText = `${comboMultiplier.toFixed(2)}x`;
+        updateHeaderHUD();
+
+    } else {
+        playSound('wrong');
+        currentStreak = 0;
+        comboMultiplier = 1.0;
+        document.getElementById('game-streak').innerHTML = `0 <i class="fa-solid fa-fire text-amber-500 text-xl"></i>`;
+        document.getElementById('game-multiplier').innerText = '1.0x';
+    }
+
+    nextGameProblem();
+}
+
+function skipProblem() {
+    if (!gameActive) return;
+    problemHistory.push({
+        equation: currentProblem.latexEq,
+        isCorrect: false
+    });
+
+    currentStreak = 0;
+    comboMultiplier = 1.0;
+    document.getElementById('game-streak').innerHTML = `0 <i class="fa-solid fa-fire text-amber-500 text-xl"></i>`;
+    document.getElementById('game-multiplier').innerText = '1.0x';
+    nextGameProblem();
+}
+
+function getStrategicHint() {
+    if (!currentProblem || hintLevel >= currentProblem.hints.length) return;
+    const expBox = document.getElementById('game-explanation');
+    const expSteps = document.getElementById('game-explanation-steps');
+    if (hintLevel === 0) expSteps.innerHTML = '';
+
+    const p = document.createElement('div');
+    p.className = "text-slate-300 border-l-2 border-amber-400 pl-2 py-0.5";
+    p.innerHTML = `<strong>Hint ${hintLevel + 1}:</strong> ${currentProblem.hints[hintLevel]}`;
+    expSteps.appendChild(p);
+
+    expBox.classList.remove('hidden');
+    hintLevel++;
+    document.getElementById('hint-count').innerText = hintLevel;
+}
+
+function endChallenge() {
+    if (gameTimer) clearInterval(gameTimer);
+    gameActive = false;
+    playSound('correct');
+
+    confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
+
+    const acc = totalAttempted === 0 ? 100 : Math.round((totalCorrect / totalAttempted) * 100);
+    document.getElementById('res-score').innerText = gameScore;
+    document.getElementById('res-accuracy').innerText = `${acc}%`;
+    document.getElementById('res-streak').innerText = maxStreak;
+    document.getElementById('res-ratio').innerText = `${totalCorrect}/${totalAttempted}`;
+
+    const reviewContainer = document.getElementById('res-review-list');
+    reviewContainer.innerHTML = '';
+
+    if (problemHistory.length === 0) {
+        reviewContainer.innerHTML = '<p class="text-xs text-slate-500">No questions attempted.</p>';
+    } else {
+        problemHistory.forEach((item, idx) => {
+            const row = document.createElement('div');
+            row.className = `p-2.5 rounded-xl border text-xs font-mono flex items-center justify-between ${item.isCorrect ? 'bg-emerald-950/30 border-emerald-800/50 text-emerald-300' : 'bg-red-950/30 border-red-800/50 text-red-300'}`;
+            row.innerHTML = `
+                <div class="truncate max-w-[80%]">
+                    <span class="font-bold mr-1">#${idx + 1}:</span> ${item.equation}
+                </div>
+                <div class="text-right font-bold">
+                    ${item.isCorrect ? '<i class="fa-solid fa-check text-emerald-400"></i> Correct' : '<i class="fa-solid fa-xmark text-red-400"></i> Incorrect'}
+                </div>
+            `;
+            reviewContainer.appendChild(row);
+        });
+    }
+
+    switchView('results');
+}
+
+function updateHeaderHUD() {
+    document.getElementById('stat-xp').innerText = `${totalXP} XP`;
+    document.getElementById('stat-highscore').innerText = `Best: ${highScore}`;
+}
+
+document.addEventListener('keydown', (e) => {
+    if (!gameActive) return;
+    const key = e.key.toUpperCase();
+    if (['1', 'A'].includes(key)) selectMCQOption(0);
+    if (['2', 'B'].includes(key)) selectMCQOption(1);
+    if (['3', 'C'].includes(key)) selectMCQOption(2);
+    if (['4', 'D'].includes(key)) selectMCQOption(3);
+});
+
+/* Scratchpad Canvas */
+let scratchpadVisible = false;
+const canvas = document.getElementById('scratchpad');
+const ctx = canvas.getContext('2d');
+let drawing = false;
+let penColor = '#8B5CF6';
+
+function toggleScratchpad() {
+    scratchpadVisible = !scratchpadVisible;
+    const container = document.getElementById('scratchpad-container');
+    const text = document.getElementById('scratchpad-toggle-text');
+
+    if (scratchpadVisible) {
+        container.classList.remove('hidden');
+        text.innerText = 'Hide Scratchpad';
+        resizeCanvas();
+    } else {
+        container.classList.add('hidden');
+        text.innerText = 'Scratchpad';
+    }
+}
+
+function setPenColor(color) {
+    penColor = color;
+    ctx.strokeStyle = penColor;
+}
+
+function resizeCanvas() {
+    const rect = canvas.parentElement.getBoundingClientRect();
+    canvas.width = rect.width;
+    canvas.height = rect.height;
+    ctx.strokeStyle = penColor;
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+}
+
+function clearScratchpad() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+canvas.addEventListener('mousedown', (e) => { drawing = true; ctx.beginPath(); draw(e); });
+canvas.addEventListener('mouseup', () => drawing = false);
+canvas.addEventListener('mousemove', draw);
+
+canvas.addEventListener('touchstart', (e) => { drawing = true; ctx.beginPath(); draw(e.touches[0]); e.preventDefault(); });
+canvas.addEventListener('touchend', () => drawing = false);
+canvas.addEventListener('touchmove', (e) => { draw(e.touches[0]); e.preventDefault(); });
+
+function draw(e) {
+    if (!drawing) return;
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    ctx.lineTo(x, y);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+}
+
+window.onload = function() {
+    updateHeaderHUD();
+    renderKaTeXPreviews();
+    updateSetupSummary();
+    window.addEventListener('resize', () => { if (scratchpadVisible) resizeCanvas(); });
+};
+    </script>
+</body>
+</html>
