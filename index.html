@@ -76,13 +76,24 @@ header p {
     cursor: pointer;
     font-size: 15px;
     font-weight: bold;
-    transition: 0.2s;
+    transition: background-color 0.16s ease, border-color 0.16s ease, color 0.16s ease, transform 0.12s ease, box-shadow 0.16s ease;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
 }
 
-.topic-button:hover,
-.level-button:hover {
-    transform: translateY(-2px);
-    border-color: #6366f1;
+/* Hover effects are limited to devices that actually support hovering.
+   This prevents buttons from appearing stuck in a hover state after tapping. */
+@media (hover: hover) and (pointer: fine) {
+    .topic-button:hover,
+    .level-button:hover {
+        border-color: #6366f1;
+        box-shadow: 0 3px 9px rgba(99, 102, 241, 0.12);
+    }
+
+    .topic-button:not(.active):hover,
+    .level-button:not(.active):hover {
+        transform: translateY(-1px);
+    }
 }
 
 .topic-button.active,
@@ -203,6 +214,10 @@ header p {
     font-size: 16px;
     font-weight: bold;
     cursor: pointer;
+    min-height: 48px;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 0.1s ease, box-shadow 0.16s ease, background-color 0.16s ease, opacity 0.16s ease;
 }
 
 .check-button {
@@ -215,8 +230,44 @@ header p {
     color: #172033;
 }
 
-.main-button:hover {
-    opacity: 0.9;
+.shortcut-hint {
+    display: inline-block;
+    margin-left: 7px;
+    padding: 3px 6px;
+    border-radius: 6px;
+    background: rgba(23, 32, 51, 0.09);
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+    vertical-align: 1px;
+}
+
+.main-button:active,
+.topic-button:active,
+.level-button:active {
+    transform: scale(0.97);
+}
+
+.main-button:focus-visible,
+.topic-button:focus-visible,
+.level-button:focus-visible {
+    outline: 3px solid rgba(99, 102, 241, 0.35);
+    outline-offset: 3px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .main-button:hover {
+        opacity: 0.92;
+        box-shadow: 0 4px 12px rgba(23, 32, 51, 0.12);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .main-button,
+    .topic-button,
+    .level-button {
+        transition: none;
+    }
 }
 
 /* =========================
@@ -327,6 +378,12 @@ header p {
             class="topic-button"
             data-topic="factorisation">
             Factorisation
+        </button>
+
+        <button
+            class="topic-button"
+            data-topic="rounding">
+            Rounding Numbers
         </button>
 
     </div>
@@ -500,9 +557,11 @@ header p {
             <button
                 type="button"
                 id="newQuestion"
-                class="main-button new-button">
+                class="main-button new-button"
+                title="Next question (Alt + Right Arrow; or N when not typing)"
+                aria-keyshortcuts="Alt+ArrowRight N">
 
-                New Question
+                New Question <span class="shortcut-hint" aria-hidden="true">Alt + →</span>
 
             </button>
 
@@ -523,6 +582,10 @@ header p {
 
         Algebra:
         <strong>2(x+1)(x+2)</strong>
+
+        <br>
+
+        Rounding: enter the rounded number (for example, <strong>3.50</strong>).
 
     </div>
 
@@ -993,6 +1056,95 @@ function generateExpansionQuestion() {
         type: "polynomial"
     };
 
+}
+
+
+// ==================================================
+// ROUNDING NUMBERS
+// ==================================================
+
+function roundToDecimalPlaces(value, places, method) {
+    const factor = Math.pow(10, places);
+    const scaled = value * factor;
+    let rounded;
+
+    if (method === "up") {
+        // Round up means move to the next value at the requested precision.
+        rounded = Math.ceil(scaled - 1e-10);
+    } else if (method === "down") {
+        // Round down means remove the extra digits without increasing the value.
+        rounded = Math.floor(scaled + 1e-10);
+    } else {
+        // Round off to the nearest value; ties go up for these positive questions.
+        rounded = Math.floor(scaled + 0.5 + 1e-10);
+    }
+
+    return (rounded / factor).toFixed(places);
+}
+
+function roundToSignificantFigures(value, figures, method) {
+    const power = figures - 1 - Math.floor(Math.log10(Math.abs(value)));
+    const factor = Math.pow(10, power);
+    const scaled = value * factor;
+    let rounded;
+
+    if (method === "up") {
+        rounded = Math.ceil(scaled - 1e-10);
+    } else if (method === "down") {
+        rounded = Math.floor(scaled + 1e-10);
+    } else {
+        rounded = Math.floor(scaled + 0.5 + 1e-10);
+    }
+
+    const result = rounded / factor;
+    return Number(result.toPrecision(figures)).toString();
+}
+
+function generateRoundingQuestion() {
+    // Keep the numbers positive so that round up/down have an unambiguous
+    // school-maths meaning, and always generate digits beyond the target place.
+    const value = randomChoice([
+        randomNumber(1001, 999999) / 1000,
+        randomNumber(1001, 999999) / 1000,
+        randomNumber(101, 999999) / 10000
+    ]);
+    const method = currentLevel === 1
+        ? "nearest"
+        : currentLevel === 2
+            ? randomChoice(["nearest", "nearest", "up", "down"])
+            : randomChoice(["nearest", "up", "down"]);
+    const useSignificantFigures = currentLevel === 1
+        ? false
+        : currentLevel === 2
+            ? Math.random() < 0.35
+            : Math.random() < 0.5;
+    const precision = currentLevel === 1
+        ? randomChoice([1, 2])
+        : currentLevel === 2
+            ? randomChoice([1, 2, 3])
+            : randomChoice([1, 2, 3, 4]);
+
+    const operation = method === "nearest"
+        ? "round off"
+        : method === "up" ? "round up" : "round down";
+    let question;
+    let answer;
+
+    if (useSignificantFigures) {
+        question = operation + " <strong>" + value + "</strong> to <strong>" + precision +
+            (precision === 1 ? " significant figure" : " significant figures") + ".";
+        answer = roundToSignificantFigures(value, precision, method);
+    } else {
+        question = operation + " <strong>" + value + "</strong> to <strong>" + precision +
+            (precision === 1 ? " decimal place" : " decimal places") + ".";
+        answer = roundToDecimalPlaces(value, precision, method);
+    }
+
+    return {
+        question: question,
+        answer: answer,
+        type: "number"
+    };
 }
 
 
@@ -2094,7 +2246,10 @@ function getTopicName() {
             "Expansion",
 
         factorisation:
-            "Factorisation"
+            "Factorisation",
+
+        rounding:
+            "Rounding Numbers"
 
     };
 
@@ -2158,10 +2313,17 @@ function generateQuestion() {
     }
 
 
-    else {
+    else if (currentTopic === "factorisation") {
 
         currentQuestion =
             generateFactorisationQuestion();
+
+    }
+
+    else {
+
+        currentQuestion =
+            generateRoundingQuestion();
 
     }
 
@@ -2356,6 +2518,29 @@ document
         "click",
         generateQuestion
     );
+
+// ==================================================
+// KEYBOARD SHORTCUT: NEXT QUESTION
+// Alt + Right Arrow works even while the answer box is focused.
+// N works when the user is not typing in a form field.
+// ==================================================
+document.addEventListener("keydown", function(event) {
+    if (event.repeat || event.ctrlKey || event.metaKey || event.shiftKey) return;
+
+    const active = document.activeElement;
+    const isTypingField = active && (
+        active.matches("input, textarea, select") || active.isContentEditable
+    );
+
+    const altRight = event.altKey && event.key === "ArrowRight";
+    const nShortcut = !event.altKey && !isTypingField && event.key.toLowerCase() === "n";
+
+    if (altRight || nShortcut) {
+        event.preventDefault();
+        generateQuestion();
+        document.getElementById("answer").focus();
+    }
+});
 
 
 // ==================================================
